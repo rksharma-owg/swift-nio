@@ -237,7 +237,7 @@ jobs:
           printf '%s: %s\n' "$app" "$version"
           if [[ "$EXPECTED_VERSION" == "latest beta" ]]; then
             if [[ "$app" == *beta* || "$app" == *Beta* ]]; then selected="$app"; fi
-          elif [[ "$version" == *"Swift version $expected."* ]]; then
+          elif [[ "$version" =~ Swift\ version\ $expected([.\ ]|$) ]]; then
             selected="$app"
           fi
         done
@@ -281,5 +281,4 @@ jobs:
       env:
         BENCHMARK_PACKAGE_PATH: ${{ inputs.benchmark_package_path }}
         BENCHMARK_PACKAGE_PATHS: ${{ inputs.benchmark_package_paths }}
-        DEVELOPER_DIR: /Applications/${{ matrix.config.xcode_app }}
-        SWIFT_VERSION: Xcode ${{ matrix.config.xcode_version }}
+          SWIFT_VERSION: Xcode ${{ matrix.config.xcode_version }}

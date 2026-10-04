@@ -403,7 +403,7 @@ jobs:
           printf '%s: %s\n' "$app" "$version"
           if [[ "$EXPECTED_VERSION" == "latest beta" ]]; then
             if [[ "$app" == *beta* || "$app" == *Beta* ]]; then selected="$app"; fi
-          elif [[ "$version" == *"Swift version $expected."* ]]; then
+          elif [[ "$version" =~ Swift\ version\ $expected([.\ ]|$) ]]; then
             selected="$app"
           fi
         done
@@ -513,6 +513,5 @@ jobs:
         /usr/bin/xcodebuild ${QUIET_ARG} -scheme ${BUILD_SCHEME} -destination "name=Apple Vision Pro" test
     env:
       XCODE_VERSION: ${{ matrix.config.xcode_version }}
-      DEVELOPER_DIR: /Applications/${{ matrix.config.xcode_app }}
       BUILD_SCHEME: ${{ inputs.build_scheme }}
       QUIET_ARG: ${{ inputs.debug_output_enabled && ' ' || '-quiet' }}
