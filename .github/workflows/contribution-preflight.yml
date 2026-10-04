@@ -13,7 +13,7 @@ permissions:
         required: true
         default: all
         type: choice
-        options: [all, macos-only]
+        options: [all, macos-only, macos-new]
       base_sha:
         description: Full upstream baseline SHA
         required: true
@@ -125,10 +125,12 @@ jobs:
     - name: Check for skipped tests
       run: test -r test.out && ! grep -i skipped test.out
   macos-tests:
-    if: ${{ inputs.checks == 'all' || inputs.checks == 'macos-only' }}
+    if: ${{ inputs.checks == 'all' || inputs.checks == 'macos-only' || inputs.checks == 'macos-new' }}
     name: macOS tests
     uses: rksharma-owg/swift-nio/.github/workflows/macos_tests.yml@main
     with:
+      swift_6_2_enabled: ${{ inputs.checks != 'macos-new' }}
+      swift_6_3_enabled: ${{ inputs.checks != 'macos-new' }}
       runner_pool: general
       build_scheme: swift-nio-Package
       env_vars: '{"SWIFTNIO_CI": "1"}'
