@@ -1,16 +1,11 @@
 name: Swift 6 language mode
-
 permissions:
   contents: read
-
-on:
-  workflow_call:
-
-# We are cancelling previously triggered workflow runs
+'on':
+  workflow_call: null
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-swift-6-language-mode
   cancel-in-progress: true
-
 jobs:
   swift-6-language-mode:
     name: Swift 6 language mode
@@ -18,12 +13,25 @@ jobs:
     container:
       image: swift:6.0-jammy
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-        with:
-          persist-credentials: false
-          submodules: true
-      - name: Set the language mode
-        run: swift package tools-version --set 6.0
-      - name: Build with Swift 6 language mode
-        run: swift build -Xswiftc -warnings-as-errors
+    - name: Checkout repository
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      with:
+        persist-credentials: false
+        submodules: true
+        ref: ${{ github.event.inputs.patch_sha }}
+        fetch-depth: 0
+    - name: Verify contribution SHA and baseline
+      shell: bash
+      env:
+        PATCH_SHA: ${{ github.event.inputs.patch_sha }}
+        BASE_SHA: ${{ github.event.inputs.base_sha }}
+      run: |-
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        test "$(git rev-parse HEAD)" = "$PATCH_SHA"
+        git merge-base --is-ancestor "$BASE_SHA" HEAD
+        git log -1 --format=fuller
+        printf "Baseline: %s\n" "$BASE_SHA"
+    - name: Set the language mode
+      run: swift package tools-version --set 6.0
+    - name: Build with Swift 6 language mode
+      run: swift build -Xswiftc -warnings-as-errors

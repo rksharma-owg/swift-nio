@@ -1,0 +1,134 @@
+name: Contribution preflight
+permissions:
+  contents: read
+'on':
+  workflow_dispatch:
+    inputs:
+      patch_sha:
+        description: Full contribution commit SHA
+        required: true
+        type: string
+      base_sha:
+        description: Full upstream baseline SHA
+        required: true
+        type: string
+jobs:
+  soundness:
+    name: Soundness
+    uses: rksharma-owg/swift-nio/.github/workflows/fork-soundness.yml@main
+    with:
+      license_header_check_project_name: SwiftNIO
+      docs_check_container_image: swift:6.1-noble
+      api_breakage_check_baseline: ${{ inputs.base_sha }}
+  unit-tests:
+    name: Unit tests
+    uses: rksharma-owg/swift-nio/.github/workflows/unit_tests.yml@main
+    with:
+      linux_6_1_arguments_override: -Xswiftc -warnings-as-errors --explicit-target-dependency-import-check error
+      linux_6_2_arguments_override: -Xswiftc -warnings-as-errors --explicit-target-dependency-import-check error
+      linux_6_3_arguments_override: -Xswiftc -warnings-as-errors --explicit-target-dependency-import-check error
+      linux_6_4_arguments_override: -Xswiftc -warnings-as-errors --explicit-target-dependency-import-check error
+      linux_nightly_next_arguments_override: -Xswiftc -warnings-as-errors --explicit-target-dependency-import-check error
+      linux_nightly_main_arguments_override: --explicit-target-dependency-import-check error
+      linux_env_vars: '{"SWIFTNIO_CI": "1"}'
+      windows_6_3_enabled: true
+      windows_6_4_enabled: true
+      windows_nightly_next_enabled: true
+      windows_nightly_main_enabled: true
+  benchmarks:
+    name: Benchmarks
+    uses: rksharma-owg/swift-nio/.github/workflows/benchmarks.yml@main
+    with:
+      benchmark_package_path: Benchmarks
+  cxx-interop:
+    name: Cxx interop
+    uses: rksharma-owg/swift-nio/.github/workflows/cxx_interop.yml@main
+  construct-integration-test-matrix:
+    name: Construct integration test matrix
+    runs-on: ubuntu-latest
+    outputs:
+      integration-test-matrix: ${{ steps.generate-matrix.outputs.integration-test-matrix }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      with:
+        persist-credentials: false
+        ref: ${{ inputs.patch_sha }}
+        fetch-depth: 0
+    - name: Verify contribution SHA and baseline
+      shell: bash
+      env:
+        PATCH_SHA: ${{ github.event.inputs.patch_sha }}
+        BASE_SHA: ${{ github.event.inputs.base_sha }}
+      run: |-
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        test "$(git rev-parse HEAD)" = "$PATCH_SHA"
+        git merge-base --is-ancestor "$BASE_SHA" HEAD
+        git log -1 --format=fuller
+        printf "Baseline: %s\n" "$BASE_SHA"
+    - id: generate-matrix
+      run: echo "integration-test-matrix=$(curl -s --retry 3 https://raw.githubusercontent.com/apple/swift-nio/main/scripts/generate_matrix.sh
+        | bash)" >> "$GITHUB_OUTPUT"
+      env:
+        MATRIX_LINUX_SETUP_COMMAND: apt-get update -y -q && apt-get install -y -q lsof dnsutils netcat-openbsd net-tools curl
+          jq
+        MATRIX_LINUX_COMMAND: ./scripts/integration_tests.sh
+        MATRIX_LINUX_ENV_VARS_JSON: '{"NIO_ALLOC_COUNTER_TESTS_PARALLEL": "true"}'
+  integration-tests:
+    name: Integration tests
+    needs: construct-integration-test-matrix
+    uses: rksharma-owg/swift-nio/.github/workflows/swift_test_matrix.yml@main
+    with:
+      name: Integration tests
+      matrix_string: ${{ needs.construct-integration-test-matrix.outputs.integration-test-matrix }}
+  vsock-tests:
+    name: Vsock tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      with:
+        persist-credentials: false
+        ref: ${{ inputs.patch_sha }}
+        fetch-depth: 0
+    - name: Verify contribution SHA and baseline
+      shell: bash
+      env:
+        PATCH_SHA: ${{ github.event.inputs.patch_sha }}
+        BASE_SHA: ${{ github.event.inputs.base_sha }}
+      run: |-
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        test "$(git rev-parse HEAD)" = "$PATCH_SHA"
+        git merge-base --is-ancestor "$BASE_SHA" HEAD
+        git log -1 --format=fuller
+        printf "Baseline: %s\n" "$BASE_SHA"
+    - name: Load vsock_loopback kernel module
+      run: sudo modprobe vsock_loopback
+    - name: Build package tests
+      run: swift build --build-tests
+    - name: Run Vsock tests
+      shell: bash
+      run: swift test --filter "(?i)vsock" | tee test.out
+    - name: Check for skipped tests
+      run: test -r test.out && ! grep -i skipped test.out
+  macos-tests:
+    name: macOS tests
+    uses: rksharma-owg/swift-nio/.github/workflows/macos_tests.yml@main
+    with:
+      runner_pool: general
+      build_scheme: swift-nio-Package
+      env_vars: '{"SWIFTNIO_CI": "1"}'
+  static-sdk:
+    name: Static Linux Swift SDK
+    uses: rksharma-owg/swift-nio/.github/workflows/static_sdk.yml@main
+  wasm-sdk:
+    name: WebAssembly Swift SDK
+    uses: rksharma-owg/swift-nio/.github/workflows/wasm_swift_sdk.yml@main
+    with:
+      additional_command_arguments: --target NIOCore
+  android-sdk:
+    name: Android Swift SDK
+    uses: rksharma-owg/swift-nio/.github/workflows/android_swift_sdk.yml@main
+  release-builds:
+    name: Release builds
+    uses: rksharma-owg/swift-nio/.github/workflows/release_builds.yml@main
