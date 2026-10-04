@@ -135,6 +135,49 @@ class BootstrapTest: XCTestCase {
         }
     }
 
+    func testChildClosesWhenParentClosesDuringInitializationOnSameEventLoop() throws {
+        try self.checkChildClosesWhenParentClosesDuringInitialization(childEventLoop: self.group.next())
+    }
+
+    func testChildClosesWhenParentClosesDuringInitializationOnDifferentEventLoop() throws {
+        try self.checkChildClosesWhenParentClosesDuringInitialization(childEventLoop: Self.freshEventLoop(self.state))
+    }
+
+    private func checkChildClosesWhenParentClosesDuringInitialization(childEventLoop: EventLoop) throws {
+        let childReady = self.group.next().makePromise(of: (Channel, EventLoopPromise<Void>).self)
+        let serverChannel = try ServerBootstrap(group: self.group, childGroup: childEventLoop)
+            .childChannelInitializer { channel in
+                let initialized = channel.eventLoop.makePromise(of: Void.self)
+                childReady.succeed((channel, initialized))
+                return initialized.futureResult
+            }
+            .bind(host: "127.0.0.1", port: 0)
+            .wait()
+        defer {
+            XCTAssertNoThrow(try serverChannel.syncCloseAcceptingAlreadyClosed())
+        }
+
+        let client = try ClientBootstrap(group: self.group)
+            .connect(to: XCTUnwrap(serverChannel.localAddress))
+            .wait()
+        defer {
+            XCTAssertNoThrow(try client.syncCloseAcceptingAlreadyClosed())
+        }
+
+        let (child, initialized) = try childReady.futureResult.wait()
+        defer {
+            XCTAssertNoThrow(try child.syncCloseAcceptingAlreadyClosed())
+        }
+        let childClosed = self.expectation(description: "Accepted child closes after its parent closes")
+        child.closeFuture.whenSuccess { childClosed.fulfill() }
+
+        try serverChannel.close().wait()
+        initialized.succeed(())
+
+        self.wait(for: [childClosed], timeout: 5)
+        XCTAssertFalse(try child.eventLoop.submit { child.isActive }.wait())
+    }
+
     func testTCPBootstrapsTolerateFuturesFromDifferentEventLoopsReturnedInInitializers() throws {
         let childChannelDone = Self.freshEventLoop(self.state).makePromise(of: Void.self)
         let serverChannelDone = Self.freshEventLoop(self.state).makePromise(of: Void.self)
