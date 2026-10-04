@@ -8,12 +8,19 @@ permissions:
         description: Full contribution commit SHA
         required: true
         type: string
+      checks:
+        description: all or macos-only
+        required: true
+        default: all
+        type: choice
+        options: [all, macos-only]
       base_sha:
         description: Full upstream baseline SHA
         required: true
         type: string
 jobs:
   soundness:
+    if: ${{ inputs.checks == 'all' }}
     name: Soundness
     uses: rksharma-owg/swift-nio/.github/workflows/fork-soundness.yml@main
     with:
@@ -21,6 +28,7 @@ jobs:
       docs_check_container_image: swift:6.1-noble
       api_breakage_check_baseline: ${{ inputs.base_sha }}
   unit-tests:
+    if: ${{ inputs.checks == 'all' }}
     name: Unit tests
     uses: rksharma-owg/swift-nio/.github/workflows/unit_tests.yml@main
     with:
@@ -36,14 +44,17 @@ jobs:
       windows_nightly_next_enabled: true
       windows_nightly_main_enabled: true
   benchmarks:
+    if: ${{ inputs.checks == 'all' }}
     name: Benchmarks
     uses: rksharma-owg/swift-nio/.github/workflows/benchmarks.yml@main
     with:
       benchmark_package_path: Benchmarks
   cxx-interop:
+    if: ${{ inputs.checks == 'all' }}
     name: Cxx interop
     uses: rksharma-owg/swift-nio/.github/workflows/cxx_interop.yml@main
   construct-integration-test-matrix:
+    if: ${{ inputs.checks == 'all' }}
     name: Construct integration test matrix
     runs-on: ubuntu-latest
     outputs:
@@ -75,6 +86,7 @@ jobs:
         MATRIX_LINUX_COMMAND: ./scripts/integration_tests.sh
         MATRIX_LINUX_ENV_VARS_JSON: '{"NIO_ALLOC_COUNTER_TESTS_PARALLEL": "true"}'
   integration-tests:
+    if: ${{ inputs.checks == 'all' }}
     name: Integration tests
     needs: construct-integration-test-matrix
     uses: rksharma-owg/swift-nio/.github/workflows/swift_test_matrix.yml@main
@@ -82,6 +94,7 @@ jobs:
       name: Integration tests
       matrix_string: ${{ needs.construct-integration-test-matrix.outputs.integration-test-matrix }}
   vsock-tests:
+    if: ${{ inputs.checks == 'all' }}
     name: Vsock tests
     runs-on: ubuntu-latest
     steps:
@@ -112,6 +125,7 @@ jobs:
     - name: Check for skipped tests
       run: test -r test.out && ! grep -i skipped test.out
   macos-tests:
+    if: ${{ inputs.checks == 'all' || inputs.checks == 'macos-only' }}
     name: macOS tests
     uses: rksharma-owg/swift-nio/.github/workflows/macos_tests.yml@main
     with:
@@ -119,16 +133,20 @@ jobs:
       build_scheme: swift-nio-Package
       env_vars: '{"SWIFTNIO_CI": "1"}'
   static-sdk:
+    if: ${{ inputs.checks == 'all' }}
     name: Static Linux Swift SDK
     uses: rksharma-owg/swift-nio/.github/workflows/static_sdk.yml@main
   wasm-sdk:
+    if: ${{ inputs.checks == 'all' }}
     name: WebAssembly Swift SDK
     uses: rksharma-owg/swift-nio/.github/workflows/wasm_swift_sdk.yml@main
     with:
       additional_command_arguments: --target NIOCore
   android-sdk:
+    if: ${{ inputs.checks == 'all' }}
     name: Android Swift SDK
     uses: rksharma-owg/swift-nio/.github/workflows/android_swift_sdk.yml@main
   release-builds:
+    if: ${{ inputs.checks == 'all' }}
     name: Release builds
     uses: rksharma-owg/swift-nio/.github/workflows/release_builds.yml@main
