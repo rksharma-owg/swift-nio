@@ -4,7 +4,7 @@ permissions:
 'on':
   workflow_call: null
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-swift-6-language-mode-${{ github.event.inputs.patch_sha }}
+  group: ${{ github.workflow }}-${{ github.ref }}-swift-6-language-mode-${{ github.event.inputs.patch_sha }}-${{ github.event.inputs.checks }}
   cancel-in-progress: true
 jobs:
   swift-6-language-mode:

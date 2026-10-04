@@ -103,7 +103,7 @@ name: Soundness
 permissions:
   contents: read
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-soundness-${{ github.event.inputs.patch_sha }}
+  group: ${{ github.workflow }}-${{ github.ref }}-soundness-${{ github.event.inputs.patch_sha }}-${{ github.event.inputs.checks }}
   cancel-in-progress: true
 jobs:
   api-breakage-check:

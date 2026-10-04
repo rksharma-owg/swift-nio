@@ -13,7 +13,7 @@ permissions:
         required: true
         default: all
         type: choice
-        options: [all, macos-only, macos-new, windows-only, benchmarks-only]
+        options: [all, macos-only, macos-new, windows-only, benchmarks-only, unit-only]
       base_sha:
         description: Full upstream baseline SHA
         required: true
@@ -28,16 +28,16 @@ jobs:
       docs_check_container_image: swift:6.1-noble
       api_breakage_check_baseline: ${{ inputs.base_sha }}
   unit-tests:
-    if: ${{ inputs.checks == 'all' || inputs.checks == 'windows-only' }}
+    if: ${{ inputs.checks == 'all' || inputs.checks == 'windows-only' || inputs.checks == 'unit-only' }}
     name: Unit tests
     uses: rksharma-owg/swift-nio/.github/workflows/unit_tests.yml@main
     with:
-      linux_6_2_enabled: ${{ inputs.checks == 'all' }}
-      linux_6_3_enabled: ${{ inputs.checks == 'all' }}
-      linux_6_4_enabled: ${{ inputs.checks == 'all' }}
+      linux_6_2_enabled: ${{ inputs.checks != 'windows-only' }}
+      linux_6_3_enabled: ${{ inputs.checks != 'windows-only' }}
+      linux_6_4_enabled: ${{ inputs.checks != 'windows-only' }}
       linux_nightly_6_1_enabled: false
-      linux_nightly_next_enabled: ${{ inputs.checks == 'all' }}
-      linux_nightly_main_enabled: ${{ inputs.checks == 'all' }}
+      linux_nightly_next_enabled: ${{ inputs.checks != 'windows-only' }}
+      linux_nightly_main_enabled: ${{ inputs.checks != 'windows-only' }}
       linux_6_1_arguments_override: -Xswiftc -warnings-as-errors --explicit-target-dependency-import-check error
       linux_6_2_arguments_override: -Xswiftc -warnings-as-errors --explicit-target-dependency-import-check error
       linux_6_3_arguments_override: -Xswiftc -warnings-as-errors --explicit-target-dependency-import-check error
@@ -45,9 +45,9 @@ jobs:
       linux_nightly_next_arguments_override: -Xswiftc -warnings-as-errors --explicit-target-dependency-import-check error
       linux_nightly_main_arguments_override: --explicit-target-dependency-import-check error
       linux_env_vars: '{"SWIFTNIO_CI": "1"}'
-      windows_6_3_enabled: ${{ inputs.checks == 'all' }}
+      windows_6_3_enabled: ${{ inputs.checks != 'windows-only' }}
       windows_6_4_enabled: true
-      windows_nightly_next_enabled: ${{ inputs.checks == 'all' }}
+      windows_nightly_next_enabled: ${{ inputs.checks != 'windows-only' }}
       windows_nightly_main_enabled: true
   benchmarks:
     if: ${{ inputs.checks == 'all' || inputs.checks == 'benchmarks-only' }}
