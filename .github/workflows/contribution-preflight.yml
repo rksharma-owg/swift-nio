@@ -13,7 +13,7 @@ permissions:
         required: true
         default: all
         type: choice
-        options: [all, macos-only, macos-new, windows-only]
+        options: [all, macos-only, macos-new, windows-only, benchmarks-only]
       base_sha:
         description: Full upstream baseline SHA
         required: true
@@ -50,11 +50,14 @@ jobs:
       windows_nightly_next_enabled: ${{ inputs.checks == 'all' }}
       windows_nightly_main_enabled: true
   benchmarks:
-    if: ${{ inputs.checks == 'all' }}
+    if: ${{ inputs.checks == 'all' || inputs.checks == 'benchmarks-only' }}
     name: Benchmarks
     uses: rksharma-owg/swift-nio/.github/workflows/benchmarks.yml@main
     with:
       benchmark_package_path: Benchmarks
+      linux_6_2_enabled: ${{ inputs.checks == 'all' }}
+      linux_6_3_enabled: ${{ inputs.checks == 'all' }}
+      linux_6_4_enabled: ${{ inputs.checks == 'all' }}
   cxx-interop:
     if: ${{ inputs.checks == 'all' }}
     name: Cxx interop
