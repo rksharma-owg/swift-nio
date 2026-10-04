@@ -21,7 +21,7 @@ import Testing
 
 @Suite
 struct LoopBoundCrashTests {
-    private static let regex = "NIOCore/NIOLoopBound.swift:[0-9]+: Precondition failed"
+    private static let regex = "NIOCore/NIOLoopBound.swift:[0-9]+: Precondition failed: Not on expected EventLoop thread"
 
     @Test
     func initChecksEventLoop() async {

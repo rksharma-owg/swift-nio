@@ -1434,7 +1434,7 @@ extension EventLoop {
     /// Checks the necessary condition of currently running on the called `EventLoop` for making forward progress.
     @inlinable
     public func preconditionInEventLoop(file: StaticString = #fileID, line: UInt = #line) {
-        precondition(self.inEventLoop, file: file, line: line)
+        precondition(self.inEventLoop, "Not on expected EventLoop thread", file: file, line: line)
     }
 
     /// Checks the necessary condition of currently _not_ running on the called `EventLoop` for making forward progress.

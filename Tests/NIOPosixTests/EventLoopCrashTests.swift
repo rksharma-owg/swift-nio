@@ -62,7 +62,7 @@ struct EventLoopCrashTests {
             let group = MultiThreadedEventLoopGroup(numberOfThreads: 2)
             group.next().assertInEventLoop(file: "DUMMY", line: 42)
         }
-        expectCrashOutput(result, matches: "Precondition failed")
+        expectCrashOutput(result, matches: "DUMMY:42: Precondition failed: Not on expected EventLoop thread")
     }
 
     @Test
@@ -71,7 +71,7 @@ struct EventLoopCrashTests {
             let group = MultiThreadedEventLoopGroup(numberOfThreads: 2)
             group.next().preconditionInEventLoop(file: "DUMMY", line: 42)
         }
-        expectCrashOutput(result, matches: "Precondition failed")
+        expectCrashOutput(result, matches: "DUMMY:42: Precondition failed: Not on expected EventLoop thread")
     }
 
     // `assertNotInEventLoop` is a `debugOnly` check that doesn't trap at all in
