@@ -13,7 +13,7 @@ permissions:
         description: The test matrix definition.
         required: true
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.name }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.name }}-${{ github.event.inputs.patch_sha }}
   cancel-in-progress: true
 jobs:
   execute-matrix:

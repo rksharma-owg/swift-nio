@@ -111,7 +111,7 @@ permissions:
         type: string
         description: The command of the nightly main Swift version windows matrix job to execute.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.name }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.name }}-${{ github.event.inputs.patch_sha }}
   cancel-in-progress: true
 jobs:
   linux:
