@@ -281,4 +281,4 @@ jobs:
       env:
         BENCHMARK_PACKAGE_PATH: ${{ inputs.benchmark_package_path }}
         BENCHMARK_PACKAGE_PATHS: ${{ inputs.benchmark_package_paths }}
-          SWIFT_VERSION: Xcode ${{ matrix.config.xcode_version }}
+        SWIFT_VERSION: Xcode ${{ matrix.config.xcode_version }}
